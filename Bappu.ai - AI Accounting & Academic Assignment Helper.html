@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="bn" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bappu.ai - AI Accounting & Academic Assignment Helper</title>
+  <meta name="description" content="AI Assignment Helper for BBA Honours Accounting students with PDF Studio, RAG accounting library, and Bengali-English academic support.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Marked.js for markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+:root {
+  --primary: #1A365D;
+  --primary-light: #2B6CB0;
+  --secondary: #319795;
+  --accent-gold: #D69E2E;
+  --surface-dark: #0f172a;
+  --surface-chat: #1e293b;
+  --bg-page: #f8fafc;
+}
+
+body {
+  font-family: 'Inter', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-bengali {
+  font-family: 'Hind Siliguri', 'Inter', sans-serif;
+}
+
+.code-font {
+  font-family: 'Fira Code', monospace;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+/* Chat bubble prose */
+.chat-prose {
+  color: inherit;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.chat-prose h1, .chat-prose h2, .chat-prose h3 {
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.dark .chat-prose h1, .dark .chat-prose h2, .dark .chat-prose h3 {
+  color: #f1f5f9;
+}
+
+.chat-prose h1 { font-size: 1.35rem; }
+.chat-prose h2 { font-size: 1.2rem; }
+.chat-prose h3 { font-size: 1.05rem; }
+
+.chat-prose p {
+  margin-bottom: 0.85rem;
+}
+
+.chat-prose ul, .chat-prose ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.85rem;
+}
+.chat-prose ul { list-style-type: disc; }
+.chat-prose ol { list-style-type: decimal; }
+
+.chat-prose li {
+  margin-bottom: 0.25rem;
+}
+
+.chat-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  display: block;
+}
+
+.chat-prose th, .chat-prose td {
+  border: 1px solid #cbd5e1;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.dark .chat-prose th, .dark .chat-prose td {
+  border-color: #334155;
+}
+
+.chat-prose th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+}
+
+.dark .chat-prose th {
+  background-color: #1e293b;
+}
+
+.chat-prose pre {
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+
+.chat-prose code {
+  font-family: 'Fira Code', monospace;
+  background-color: rgba(148, 163, 184, 0.2);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.chat-prose pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.chat-prose blockquote {
+  border-left: 4px solid #2B6CB0;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #475569;
+  font-style: italic;
+}
+
+.dark .chat-prose blockquote {
+  color: #94a3b8;
+}
+
+/* PDF Print styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pdf-render-area, #pdf-render-area * {
+    visibility: visible;
+  }
+  #pdf-render-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20mm;
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+
+@media print {
+  body * { visibility: hidden !important; }
+  #pdf-render-area, #pdf-render-area * { visibility: visible !important; }
+  #pdf-render-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+  @page { size: A4; margin: 12mm; }
+}
+</style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row overflow-hidden font-bengali">
+
+  <!-- ================= Mobile Header ================= -->
+  <header class="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 flex-shrink-0">
+    <div class="flex items-center space-x-2">
+      <span class="text-xl">🎓</span>
+      <span class="font-bold tracking-tight text-blue-400">Bappu.ai</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="createNewSession()" class="p-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        New
+      </button>
+      <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="p-2 rounded-lg bg-slate-800 text-slate-300">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= Left Navigation Sidebar ================= -->
+  <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 border-r border-slate-800/80 flex flex-col transition-transform duration-200 ease-in-out -translate-x-full md:translate-x-0 flex-shrink-0">
+    <!-- Brand / New Chat -->
+    <div class="p-4 border-b border-slate-800/60">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/20">
+            B
+          </div>
+          <div>
+            <h1 class="font-bold text-white text-base leading-tight">Bappu.ai</h1>
+            <p class="text-[11px] text-blue-400 font-medium">BBA Honours Accounting</p>
+          </div>
+        </div>
+        <button onclick="switchTab('settings')" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800" title="Settings">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+      </div>
+
+      <button onclick="createNewSession()" class="w-full py-2.5 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-blue-900/30 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>New Chat Session</span>
+      </button>
+    </div>
+
+    <!-- Navigation Hub -->
+    <nav class="p-3 space-y-1 text-xs font-medium border-b border-slate-800/60">
+      <button id="nav-chat" onclick="switchTab('chat')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-600 text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+        <span>AI Assignment Chat</span>
+      </button>
+
+      <button id="nav-library" onclick="switchTab('library')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        <span>Accounting Library</span>
+      </button>
+
+      <button id="nav-studio" onclick="switchTab('studio')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        <span>PDF Studio & Cover</span>
+      </button>
+
+      <button id="nav-admin" onclick="switchTab('admin')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+        <span>Admin Portal (/admin)</span>
+      </button>
+    </nav>
+
+    <!-- Chat History List -->
+    <div class="flex-1 overflow-y-auto p-3">
+      <div class="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2 px-2">History</div>
+      <div id="session-list" class="space-y-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- User / System Footer -->
+    <div class="p-3 border-t border-slate-800/80 text-xs text-slate-400 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <span class="truncate">Gemini 2.5 Flash Connected</span>
+      </div>
+      <span class="text-[10px] text-slate-500 font-mono">v2.4.0</span>
+    </div>
+  </aside>
+
+  <!-- ================= Main Content Container ================= -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+
+    <!-- ---------------- Pane 1: AI Assignment Chat ---------------- -->
+    <section id="pane-chat" class="flex-1 flex flex-col h-full overflow-hidden">
+      <!-- Chat Sub-header -->
+      <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <select id="chat-subject-select" onchange="state.config.subject = this.value" class="text-xs font-medium bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="Principles of Accounting">Principles of Accounting (১ম বর্ষ)</option>
+            <option value="Advanced Accounting">Advanced Accounting (২য় বর্ষ)</option>
+            <option value="Cost Accounting">Cost Accounting (৩য় বর্ষ)</option>
+            <option value="Taxation in Bangladesh">Taxation & Auditing (৪র্থ বর্ষ)</option>
+            <option value="Management Accounting">Management Accounting</option>
+          </select>
+          <select id="chat-lang-select" onchange="state.config.language = this.value" class="text-xs font-medium bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none">
+            <option value="both">English + বাংলা ব্যাখ্যা</option>
+            <option value="en">Pure English (Academic)</option>
+            <option value="bn">বাংলা উত্তর</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="switchTab('studio')" class="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Export to PDF Studio
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Thread -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <!-- Messages rendered dynamically -->
+      </div>
+
+      <!-- Loading / Status indicator -->
+      <div id="loading-indicator" class="hidden px-6 py-2 bg-blue-50 dark:bg-blue-950/40 border-t border-blue-200 dark:border-blue-900/50 flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+        <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span id="loading-text">Generating assignment calculations and formatting with Gemini...</span>
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <div class="max-w-4xl mx-auto flex flex-col gap-2">
+          <div class="relative bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-300 dark:border-slate-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 shadow-inner">
+            <textarea
+              id="chat-input"
+              rows="2"
+              placeholder="Enter your assignment question here... (e.g. Prepare a Trial Balance with Adjusting Entries, or explain Cost Sheet elements in Bengali)"
+              class="w-full bg-transparent px-4 py-3.5 text-sm outline-none resize-none placeholder-slate-400 font-bengali max-h-48"
+            ></textarea>
+            
+            <div class="flex items-center justify-between px-3 py-2 border-t border-slate-200/50 dark:border-slate-700/50 text-xs">
+              <span class="text-[11px] text-slate-400 hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300 font-mono">Enter</kbd> to Send, <kbd class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300 font-mono">Shift+Enter</kbd> for New Line</span>
+              <div class="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onclick="submitMessage()"
+                  class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 transition"
+                >
+                  Generate Assignment
+                </button>
+                <button
+                  id="send-btn"
+                  onclick="submitMessage()"
+                  class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition"
+                >
+                  <span>Send Question</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-center text-slate-400">
+            Bappu.ai produces academic answers formatted for National University BBA Honours curricula.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- Pane 2: Accounting RAG Library ---------------- -->
+    <section id="pane-library" class="hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Accounting Knowledge Base</h2>
+          <p class="text-sm text-slate-500">Verified assignment prompts and core accounting topics for BBA Honours.</p>
+        </div>
+        <div id="library-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- Pane 3: PDF Studio & Document Customizer ---------------- -->
+    <section id="pane-studio" class="hidden flex-1 flex flex-col md:flex-row overflow-hidden">
+      <!-- Editor Controls -->
+      <div class="w-full md:w-96 p-5 border-r border-slate-200 dark:border-slate-800 overflow-y-auto bg-white dark:bg-slate-950 flex flex-col gap-4 flex-shrink-0">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Academic PDF Studio</h3>
+          <p class="text-xs text-slate-500">Customize cover page, header metadata, and export print-ready PDF.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Assignment Title</label>
+          <input id="studio-title" oninput="updateStudioPreview()" type="text" class="w-full text-xs p-2 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Assignment Content (Markdown)</label>
+          <textarea id="studio-content" oninput="updateStudioPreview()" rows="12" class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono"></textarea>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="downloadPdf()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print / Save as PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Live PDF Preview Panel -->
+      <div class="flex-1 overflow-y-auto p-6 bg-slate-200/60 dark:bg-slate-900/80">
+        <div id="pdf-preview-box">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- Pane 4: Admin Portal ---------------- -->
+    <section id="pane-admin" class="hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-xl mx-auto">
+        <!-- Admin Login Card -->
+        <div id="admin-login-card" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md">
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">Admin Authentication</h2>
+              <p class="text-xs text-slate-500">Initial Password: <code class="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded font-mono">507242</code></p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Admin Password</label>
+              <input id="admin-password" type="password" placeholder="Enter password (507242)" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            </div>
+            <p id="admin-error" class="text-xs text-red-500 font-semibold"></p>
+            <button onclick="handleAdminLogin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow">
+              Access Admin Dashboard
+            </button>
+          </div>
+        </div>
+
+        <!-- Admin Dashboard (After Login) -->
+        <div id="admin-dashboard" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+              <h3 class="font-bold text-slate-900 dark:text-white">System & AI Model Configuration</h3>
+              <button onclick="adminLogout()" class="text-xs text-red-500 hover:underline">Log Out</button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Gemini Model</label>
+              <select id="admin-model-select" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fastest & High Quality)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Academic Master System Prompt</label>
+              <textarea id="admin-system-prompt" rows="5" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono"></textarea>
+            </div>
+
+            <button onclick="saveAdminSettings()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow">
+              Save Prompt & Model Settings
+            </button>
+          </div>
+
+          <!-- Change Password Card -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md space-y-3">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Update Admin Password</h4>
+            <input id="admin-new-password" type="password" placeholder="Enter new password (min 6 characters)" class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <button onclick="updateAdminPassword()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">
+              Update Password
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- Pane 5: Settings Modal / Pane ---------------- -->
+    <section id="pane-settings" class="hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-lg mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Application Settings</h2>
+          <p class="text-xs text-slate-500">Configure your Gemini API key and student assignment profile.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Google Gemini API Key (Client Fallback)</label>
+          <input id="setting-api-key" type="password" placeholder="AIzaSy..." class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono">
+          <p class="text-[11px] text-slate-400 mt-1">If deployed on Netlify, configure <code class="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded">GEMINI_API_KEY</code> in Netlify Environment Variables. Alternatively, enter your personal key here.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Student Full Name</label>
+          <input id="setting-student-name" type="text" class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Roll / Registration / Session</label>
+          <input id="setting-student-id" type="text" class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">College / University Name</label>
+          <input id="setting-institution" type="text" class="w-full text-xs p-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+
+        <button onclick="saveUserSettings()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow">
+          Save Settings
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+/**
+ * Bappu.ai - Complete ChatGPT-style AI Assignment & Accounting Helper
+ * Single Page Application logic with Netlify function support & Gemini REST fallback.
+ */
+
+// --- Default Configuration & Accounting Knowledge Base ---
+const DEFAULT_ACCOUNTING_TOPICS = [
+  {
+    id: 'fin-acc-1',
+    subject: 'Financial Accounting',
+    titleEn: 'Double-Entry Bookkeeping & Golden Rules',
+    titleBn: 'দুতরফা দাখিলা পদ্ধতি ও সুবর্ণ নিয়মাবলী',
+    prompt: 'Explain the Golden Rules of Accounting (Traditional vs Modern approach) with journal entry examples for a merchandising business. Provide ledger postings and a trial balance format.'
+  },
+  {
+    id: 'cost-acc-1',
+    subject: 'Cost Accounting',
+    titleEn: 'Preparation of Cost Sheet & CVP Analysis',
+    titleBn: 'উৎপাদন ব্যয় বিবরণী ও ব্রেক-ইভেন বিশ্লেষণ',
+    prompt: 'Prepare a comprehensive Cost Sheet format including Prime Cost, Factory Cost, Cost of Production, and Cost of Goods Sold. Follow with Break-Even Point (BEP) formulas in units and currency.'
+  },
+  {
+    id: 'adv-acc-1',
+    subject: 'Advanced Accounting',
+    titleEn: 'Partnership Dissolution & Piecemeal Distribution',
+    titleBn: 'অংশীদারি কারবার বিলোপসাধন ও ক্রমিক বন্টন',
+    prompt: 'Explain the Garner vs Murray rule upon insolvency of a partner in accounting, and provide step-by-step piecemeal distribution calculation.'
+  },
+  {
+    id: 'tax-1',
+    subject: 'Taxation & Auditing',
+    titleEn: 'Corporate Tax Computation & Audit Standards',
+    titleBn: 'কর নির্ধারণ ও নিরীক্ষা মানদণ্ড',
+    prompt: 'Detail the procedure of calculating taxable business income from audited financial statements, highlighting allowable vs disallowable expenses according to Income Tax guidelines.'
+  },
+  {
+    id: 'mgmt-acc-1',
+    subject: 'Management Accounting',
+    titleEn: 'Variance Analysis & Standard Costing',
+    titleBn: 'বিচ্যুতি বিশ্লেষণ ও প্রমিত ব্যয় নির্ধারণ',
+    prompt: 'Calculate Material Cost Variance, Material Price Variance, and Material Usage Variance given standard vs actual data. Present results in a clear accounting table.'
+  }
+];
+
+const INITIAL_ADMIN_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // SHA-256 for 'admin' fallback or 507242 check
+
+// --- State Management ---
+const state = {
+  activeTab: 'chat', // 'chat' | 'library' | 'studio' | 'admin' | 'settings'
+  splitPreview: false,
+  sessions: [],
+  currentSessionId: null,
+  isGenerating: false,
+  adminLoggedIn: false,
+  adminPasswordHash: localStorage.getItem('bappu_admin_pwd_hash') || null, // default check handles 507242
+  config: {
+    apiKey: localStorage.getItem('bappu_gemini_api_key') || '',
+    model: localStorage.getItem('bappu_gemini_model') || 'gemini-2.5-flash',
+    systemPrompt: localStorage.getItem('bappu_system_prompt') || 'You are Bappu.ai, a distinguished professor and expert academic assignment assistant specializing in BBA Honours Accounting, National University curriculum, and business studies. Provide well-structured, clear answers with formal headings, tables, step-by-step calculations, journal entries, and Bengali or English explanations according to the user preference.',
+    language: 'both', // 'bn', 'en', 'both'
+    subject: 'General Accounting',
+    studentName: localStorage.getItem('bappu_student_name') || 'Md. Sujar Biswas (Bappu)',
+    studentId: localStorage.getItem('bappu_student_id') || 'Roll: 212500, Reg: 1922501',
+    institution: localStorage.getItem('bappu_institution') || 'Govt. Shaheed Bulbul College, Pabna (National University)',
+    department: 'Department of Accounting',
+    courseTitle: 'Principles of Accounting'
+  },
+  studioDoc: {
+    title: 'Comprehensive Accounting Assignment',
+    subtitle: 'Submitted for Partial Fulfillment of BBA (Honours)',
+    content: '# Principles of Accounting\n\n## 1. Introduction to Double-Entry System\nIn modern financial accounting, every financial transaction impacts at least two accounts following the equation:\n\n$$\\text{Assets} = \\text{Liabilities} + \\text{Owner\'s Equity}$$\n\n### Golden Rules Summary Table\n| Account Type | Debit Effect | Credit Effect |\n| :--- | :--- | :--- |\n| **Assets** | Increase (+) | Decrease (-) |\n| **Liabilities** | Decrease (-) | Increase (+) |\n| **Equity/Capital** | Decrease (-) | Increase (+) |\n| **Revenue** | Decrease (-) | Increase (+) |\n| **Expenses** | Increase (+) | Decrease (-) |\n\n*Prepared using Bappu.ai Academic Studio.*'
+  }
+};
+
+// --- Helper Functions ---
+function getTimestamp() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// --- Session & Storage Management ---
+function loadSessions() {
+  const stored = localStorage.getItem('bappu_sessions');
+  if (stored) {
+    try {
+      state.sessions = JSON.parse(stored);
+    } catch (e) {
+      state.sessions = [];
+    }
+  }
+  if (!state.sessions || state.sessions.length === 0) {
+    createNewSession('New Accounting Chat');
+  } else {
+    state.currentSessionId = state.sessions[0].id;
+  }
+}
+
+function saveSessions() {
+  localStorage.setItem('bappu_sessions', JSON.stringify(state.sessions));
+}
+
+function getCurrentSession() {
+  return state.sessions.find(s => s.id === state.currentSessionId) || state.sessions[0];
+}
+
+function createNewSession(title = 'New Accounting Chat') {
+  const id = 'sess_' + Date.now();
+  const newSession = {
+    id,
+    title,
+    createdAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg_welcome',
+        role: 'assistant',
+        time: getTimestamp(),
+        content: `**স্বাগতম Bappu.ai-তে!** 👋\n\nআমি আপনার BBA Honours Accounting ও ব্যবসায় শিক্ষা অ্যাসাইনমেন্ট হেল্পার।\n\n- হিসাববিজ্ঞান নীতিমালা, জাবেদা, খতিয়ান, রেওয়ামিল\n- উৎপাদন ব্যয় বিবরণী ও কস্ট অ্যাকাউন্টিং\n- অংশীদারি কারবার, আয়কর ও নিরীক্ষা\n- এবং সম্পূর্ণ ফরম্যাটেড পিডিএফ অ্যাসাইনমেন্ট তৈরির জন্য প্রস্তুত।\n\nনিচে আপনার প্রশ্ন লিখুন অথবা বাম পাশের **Accounting Library** থেকে যেকোনো টপিক বেছে নিন!`
+      }
+    ]
+  };
+  state.sessions.unshift(newSession);
+  state.currentSessionId = id;
+  saveSessions();
+  renderSessionList();
+  renderMessages();
+}
+
+function selectSession(id) {
+  state.currentSessionId = id;
+  renderSessionList();
+  renderMessages();
+}
+
+function deleteSession(id, event) {
+  if (event) event.stopPropagation();
+  state.sessions = state.sessions.filter(s => s.id !== id);
+  if (state.sessions.length === 0) {
+    createNewSession();
+  } else {
+    state.currentSessionId = state.sessions[0].id;
+  }
+  saveSessions();
+  renderSessionList();
+  renderMessages();
+}
+
+// --- Markdown Rendering ---
+function renderMarkdown(md) {
+  if (typeof marked !== 'undefined') {
+    return marked.parse(md, { breaks: true, gfm: true });
+  }
+  // Simple fallback if CDN hasn't loaded yet
+  return md.replace(/\n/g, '<br/>');
+}
+
+// --- UI Rendering Functions ---
+function renderSessionList() {
+  const listEl = document.getElementById('session-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  state.sessions.forEach(sess => {
+    const isSelected = sess.id === state.currentSessionId;
+    const item = document.createElement('div');
+    item.className = `flex items-center justify-between p-2.5 rounded-lg cursor-pointer text-sm transition-colors ${
+      isSelected ? 'bg-blue-900/40 text-blue-300 font-medium border border-blue-700/50' : 'text-slate-300 hover:bg-slate-800'
+    }`;
+    item.onclick = () => selectSession(sess.id);
+
+    item.innerHTML = `
+      <div class="flex items-center space-x-2 truncate pr-2">
+        <svg class="w-4 h-4 flex-shrink-0 ${isSelected ? 'text-blue-400' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+        </svg>
+        <span class="truncate">${escapeHtml(sess.title)}</span>
+      </div>
+      <button class="text-slate-500 hover:text-red-400 p-1 rounded" onclick="deleteSession('${sess.id}', event)" title="Delete Chat">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      </button>
+    `;
+    listEl.appendChild(item);
+  });
+}
+
+function renderMessages() {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  const current = getCurrentSession();
+  container.innerHTML = '';
+
+  current.messages.forEach((msg, idx) => {
+    const isUser = msg.role === 'user';
+    const row = document.createElement('div');
+    row.className = `flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`;
+
+    const inner = document.createElement('div');
+    inner.className = `flex max-w-[85%] md:max-w-[75%] ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`;
+
+    // Avatar
+    const avatar = document.createElement('div');
+    avatar.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+      isUser ? 'bg-blue-600 text-white ml-2' : 'bg-slate-800 text-blue-400 border border-blue-500/30 mr-2'
+    }`;
+    avatar.textContent = isUser ? 'You' : 'B';
+
+    // Bubble content
+    const bubble = document.createElement('div');
+    bubble.className = `p-4 rounded-2xl shadow-sm text-sm ${
+      isUser 
+        ? 'bg-blue-600 text-white rounded-tr-none' 
+        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none chat-prose'
+    }`;
+
+    if (isUser) {
+      bubble.textContent = msg.content;
+    } else {
+      bubble.innerHTML = renderMarkdown(msg.content);
+      
+      // Actions row for assistant messages
+      const actions = document.createElement('div');
+      actions.className = 'flex items-center gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs text-slate-400';
+      actions.innerHTML = `
+        <button onclick="copyMessage(${idx})" class="hover:text-blue-500 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          Copy
+        </button>
+        <button onclick="sendToStudio(${idx})" class="hover:text-amber-500 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Open in PDF Studio
+        </button>
+        <button onclick="regenerateLast()" class="hover:text-green-500 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700/50">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Regenerate
+        </button>
+        <span class="ml-auto text-[11px] opacity-60">${msg.time || ''}</span>
+      `;
+      bubble.appendChild(actions);
+    }
+
+    inner.appendChild(avatar);
+    inner.appendChild(bubble);
+    row.appendChild(inner);
+    container.appendChild(row);
+  });
+
+  // Scroll to bottom
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return (text || '').replace(/[&<>"']/g, m => map[m]);
+}
+
+// --- Action Handlers ---
+function copyMessage(idx) {
+  const current = getCurrentSession();
+  const msg = current.messages[idx];
+  if (msg) {
+    navigator.clipboard.writeText(msg.content);
+    showToast('Copied to clipboard!');
+  }
+}
+
+function sendToStudio(idx) {
+  const current = getCurrentSession();
+  const msg = current.messages[idx];
+  if (msg) {
+    state.studioDoc.title = current.title || 'Accounting Assignment';
+    state.studioDoc.content = msg.content;
+    switchTab('studio');
+    updateStudioPreview();
+    showToast('Loaded into PDF Studio!');
+  }
+}
+
+function regenerateLast() {
+  const current = getCurrentSession();
+  if (current.messages.length === 0) return;
+  // find last user message
+  for (let i = current.messages.length - 1; i >= 0; i--) {
+    if (current.messages[i].role === 'user') {
+      const q = current.messages[i].content;
+      // remove subsequent assistant response if exists
+      current.messages = current.messages.slice(0, i + 1);
+      saveSessions();
+      renderMessages();
+      executeGeminiQuery(q);
+      break;
+    }
+  }
+}
+
+// --- Gemini API Invocation (Serverless with Direct REST Fallback) ---
+async function executeGeminiQuery(userPrompt) {
+  if (state.isGenerating) return;
+  state.isGenerating = true;
+  updateLoadingStatus(true, 'Consulting Gemini AI & Accounting Knowledge Base...');
+
+  const current = getCurrentSession();
+  const subject = state.config.subject;
+  const lang = state.config.language;
+  const model = state.config.model;
+
+  // Build conversational context
+  const contents = [];
+  const systemInstruction = `${state.config.systemPrompt}\nCurrent Subject: ${subject}. Preferred Language: ${lang}. Format all financial statements with standard columns and include step-by-step accounting explanations.`;
+
+  // Include recent turns for multi-turn history.
+  // Skip error bubbles and leading assistant messages (Gemini expects the history to start with a user turn).
+  let recentTurns = current.messages
+    .filter(m => !String(m.id || '').startsWith('msg_err_'))
+    .slice(-6);
+  while (recentTurns.length && recentTurns[0].role !== 'user') {
+    recentTurns = recentTurns.slice(1);
+  }
+  recentTurns.forEach(m => {
+    contents.push({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    });
+  });
+
+  let assistantResponse = '';
+
+  try {
+    // Attempt 0 (published artifact): ask Claude through the Artifact "sample" capability.
+    let sampleSuccess = false;
+    try {
+      const sample = (window.claude && window.claude.use) ? await window.claude.use('sample') : null;
+      if (sample) {
+        const msgs = [];
+        contents.forEach((c, i) => {
+          const role = c.role === 'model' ? 'assistant' : 'user';
+          let text = c.parts[0].text;
+          if (i === 0) text = systemInstruction + '\n\n' + text;
+          const last = msgs[msgs.length - 1];
+          if (last && last.role === role) last.content += '\n\n' + text;
+          else msgs.push({ role, content: text });
+        });
+        if (msgs.length && msgs[0].role === 'user' && msgs[msgs.length - 1].role === 'user') {
+          const res = await sample(msgs);
+          if (res && res.text) {
+            assistantResponse = res.text;
+            sampleSuccess = true;
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Claude sample unavailable, trying other routes...', e);
+    }
+
+    // Attempt 1: Call Netlify Serverless Function at /.netlify/functions/gemini
+    let serverlessSuccess = sampleSuccess;
+    try {
+      if (serverlessSuccess) throw new Error('already answered');
+      const fnResponse = await fetch('/.netlify/functions/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          systemInstruction,
+          model: model || 'gemini-2.5-flash'
+        })
+      });
+
+      if (fnResponse.ok) {
+        const data = await fnResponse.json();
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          assistantResponse = data.candidates[0].content.parts[0].text;
+          serverlessSuccess = true;
+        } else if (data.text) {
+          assistantResponse = data.text;
+          serverlessSuccess = true;
+        }
+      }
+    } catch (e) {
+      console.log('Netlify function not reached or errored, trying client key fallback...', e);
+    }
+
+    // Attempt 2: If serverless function did not produce a response, use Client API Key directly
+    if (!serverlessSuccess) {
+      const apiKey = state.config.apiKey.trim();
+      if (!apiKey) {
+        throw new Error(
+          'Gemini API Key is required! Either configure GEMINI_API_KEY in your Netlify site environment variables, or enter your API key in the Bappu.ai Settings menu (⚙️).'
+        );
+      }
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      
+      const payload = {
+        systemInstruction: {
+          parts: [{ text: systemInstruction }]
+        },
+        contents: contents,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 4096
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        const errMessage = errJson.error?.message || `HTTP ${res.status} ${res.statusText}`;
+        if (res.status === 400 && errMessage.includes('API_KEY_INVALID')) {
+          throw new Error('Your Gemini API key appears invalid or expired. Please check Settings.');
+        } else if (res.status === 429) {
+          throw new Error('Gemini API rate limit or quota exceeded. Please wait a minute or use a different key.');
+        } else {
+          throw new Error(`Gemini API Error: ${errMessage}`);
+        }
+      }
+
+      const data = await res.json();
+      assistantResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!assistantResponse) {
+        throw new Error('Received empty response from Gemini. Please rephrase or try again.');
+      }
+    }
+
+    // Append response
+    current.messages.push({
+      id: 'msg_' + Date.now(),
+      role: 'assistant',
+      time: getTimestamp(),
+      content: assistantResponse
+    });
+
+  } catch (err) {
+    current.messages.push({
+      id: 'msg_err_' + Date.now(),
+      role: 'assistant',
+      time: getTimestamp(),
+      content: `⚠️ **Generation Failed**\n\n${err.message}\n\n*Tip: Click the Settings button (⚙️) on the top right to configure your API key, or visit Netlify Site Configuration to add ` + "`GEMINI_API_KEY`."
+    });
+  } finally {
+    state.isGenerating = false;
+    updateLoadingStatus(false);
+    saveSessions();
+    renderMessages();
+  }
+}
+
+function updateLoadingStatus(loading, text = '') {
+  const ind = document.getElementById('loading-indicator');
+  const btn = document.getElementById('send-btn');
+  const input = document.getElementById('chat-input');
+  if (ind) {
+    ind.classList.toggle('hidden', !loading);
+    const label = document.getElementById('loading-text');
+    if (label) label.textContent = text;
+  }
+  if (btn) btn.disabled = loading;
+  if (input) input.disabled = loading;
+}
+
+// --- Submit User Message ---
+function submitMessage() {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text || state.isGenerating) return;
+
+  const current = getCurrentSession();
+  current.messages.push({
+    id: 'msg_' + Date.now(),
+    role: 'user',
+    time: getTimestamp(),
+    content: text
+  });
+
+  if (current.messages.filter(m => m.role === 'user').length === 1) {
+    current.title = text.slice(0, 32) + (text.length > 32 ? '...' : '');
+    renderSessionList();
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  saveSessions();
+  renderMessages();
+  executeGeminiQuery(text);
+}
+
+// --- Tab Switching ---
+function switchTab(tab) {
+  state.activeTab = tab;
+  ['chat', 'library', 'studio', 'admin', 'settings'].forEach(t => {
+    const pane = document.getElementById(`pane-${t}`);
+    const nav = document.getElementById(`nav-${t}`);
+    if (pane) pane.classList.toggle('hidden', t !== tab);
+    if (nav) {
+      if (t === tab) {
+        nav.classList.add('bg-blue-600', 'text-white');
+        nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
+      } else {
+        nav.classList.remove('bg-blue-600', 'text-white');
+        nav.classList.add('text-slate-400', 'hover:bg-slate-800');
+      }
+    }
+  });
+
+  if (tab === 'studio') {
+    updateStudioPreview();
+  } else if (tab === 'library') {
+    renderLibrary();
+  }
+}
+
+// --- Accounting Library Render ---
+function renderLibrary() {
+  const container = document.getElementById('library-cards');
+  if (!container) return;
+  container.innerHTML = '';
+
+  DEFAULT_ACCOUNTING_TOPICS.forEach(topic => {
+    const card = document.createElement('div');
+    card.className = 'bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-500 transition-all';
+    card.innerHTML = `
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">${topic.subject}</span>
+      </div>
+      <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base mb-1">${topic.titleEn}</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${topic.titleBn}</p>
+      <p class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded border border-slate-100 dark:border-slate-700/60 mb-4 line-clamp-2">${topic.prompt}</p>
+      <button onclick="askLibraryPrompt('${topic.id}')" class="w-full py-2 px-3 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        Generate Assignment with Gemini
+      </button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function askLibraryPrompt(id) {
+  const topic = DEFAULT_ACCOUNTING_TOPICS.find(t => t.id === id);
+  if (!topic) return;
+  switchTab('chat');
+  createNewSession(topic.titleEn);
+  const input = document.getElementById('chat-input');
+  if (input) input.value = topic.prompt;
+  submitMessage();
+}
+
+// --- PDF Studio & Document Customizer ---
+function updateStudioPreview() {
+  const preview = document.getElementById('pdf-preview-box');
+  const titleInput = document.getElementById('studio-title');
+  const contentInput = document.getElementById('studio-content');
+  if (titleInput && !titleInput.value) titleInput.value = state.studioDoc.title;
+  if (contentInput && !contentInput.value) contentInput.value = state.studioDoc.content;
+
+  const currentTitle = titleInput ? titleInput.value : state.studioDoc.title;
+  const currentContent = contentInput ? contentInput.value : state.studioDoc.content;
+
+  if (preview) {
+    preview.innerHTML = `
+      <div id="pdf-render-area" class="bg-white text-slate-900 p-8 md:p-12 shadow-md rounded-lg max-w-3xl mx-auto border border-slate-200">
+        <!-- Cover Header -->
+        <div class="text-center pb-8 border-b-2 border-slate-800 mb-8">
+          <p class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-1">${escapeHtml(state.config.institution)}</p>
+          <p class="text-sm font-semibold text-blue-900 mb-4">${escapeHtml(state.config.department)}</p>
+          <h1 class="text-2xl font-bold text-slate-900 uppercase tracking-tight mb-2">${escapeHtml(currentTitle)}</h1>
+          <p class="text-sm italic text-slate-600">${escapeHtml(state.config.courseTitle)}</p>
+        </div>
+
+        <!-- Student Meta -->
+        <div class="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200 mb-8">
+          <div>
+            <p class="font-bold text-slate-700">SUBMITTED BY:</p>
+            <p class="font-semibold text-slate-900">${escapeHtml(state.config.studentName)}</p>
+            <p class="text-slate-600">${escapeHtml(state.config.studentId)}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold text-slate-700">SUBMITTED TO:</p>
+            <p class="font-semibold text-slate-900">Course Instructor</p>
+            <p class="text-slate-600">Date: ${new Date().toLocaleDateString('en-GB')}</p>
+          </div>
+        </div>
+
+        <!-- Document Body -->
+        <div class="chat-prose text-slate-800">
+          ${renderMarkdown(currentContent)}
+        </div>
+
+        <div class="mt-12 pt-4 border-t border-slate-200 flex justify-between text-[11px] text-slate-400">
+          <span>Bappu.ai Academic Assignment Engine</span>
+          <span>Page 1 of 1</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function saveBlobAsFile(blob, filename) {
+  // In a published artifact, plain <a download> links are inert, so use the downloads capability.
+  try {
+    const dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
+    if (dl) {
+      await dl.save({ filename, data: blob });
+      return true;
+    }
+  } catch (e) {
+    if (e && e.code === 'declined') { showToast('ডাউনলোড বাতিল হয়েছে'); return true; }
+    console.log('downloads capability failed', e);
+  }
+  // Normal website: real download link
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
+}
+
+async function downloadPdf() {
+  updateStudioPreview();
+  const el = document.getElementById('pdf-render-area');
+  if (!el) { showToast('আগে PDF Studio-তে কনটেন্ট লোড করুন'); return; }
+
+  const rawTitle = (document.getElementById('studio-title')?.value || 'Bappu_Assignment');
+  const safeTitle = rawTitle.replace(/[\\/:*?"<>|]+/g, '').trim() || 'Bappu_Assignment';
+  const filename = safeTitle + '.pdf';
+
+  showToast('PDF তৈরি হচ্ছে...');
+  try {
+    if (typeof html2pdf === 'undefined') throw new Error('PDF library not loaded');
+    const blob = await html2pdf().set({
+      margin: 10,
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    }).from(el).outputPdf('blob');
+    await saveBlobAsFile(blob, filename);
+    showToast('PDF সেভ হয়েছে!');
+  } catch (err) {
+    console.log('PDF generation failed, falling back to print', err);
+    showToast('সরাসরি PDF হয়নি — প্রিন্ট ডায়ালগে "Save as PDF" বাছুন');
+    try { window.print(); } catch (e) { console.log(e); }
+  }
+}
+
+// --- Admin Panel Authentication & Management ---
+async function handleAdminLogin() {
+  const pwdInput = document.getElementById('admin-password');
+  const errorEl = document.getElementById('admin-error');
+  if (!pwdInput) return;
+  const pass = pwdInput.value.trim();
+  errorEl.textContent = '';
+
+  // Compare only against the stored hash, or the initial default hash if no password was set yet.
+  // (Previously a plaintext '507242' check bypassed the changed password.)
+  const hash = await sha256(pass);
+  const targetHash = state.adminPasswordHash || await sha256('507242');
+
+  if (hash === targetHash) {
+    state.adminLoggedIn = true;
+    renderAdminPanel();
+    showToast('Admin access granted!');
+  } else {
+    errorEl.textContent = 'Incorrect password. (Initial admin password is 507242)';
+  }
+}
+
+function renderAdminPanel() {
+  const loginCard = document.getElementById('admin-login-card');
+  const dashCard = document.getElementById('admin-dashboard');
+  if (loginCard) loginCard.classList.toggle('hidden', state.adminLoggedIn);
+  if (dashCard) dashCard.classList.toggle('hidden', !state.adminLoggedIn);
+
+  if (state.adminLoggedIn) {
+    document.getElementById('admin-system-prompt').value = state.config.systemPrompt;
+    document.getElementById('admin-model-select').value = state.config.model;
+  }
+}
+
+async function updateAdminPassword() {
+  const newPass = document.getElementById('admin-new-password').value.trim();
+  if (newPass.length < 6) {
+    showToast('Password must be at least 6 characters');
+    return;
+  }
+  const newHash = await sha256(newPass);
+  state.adminPasswordHash = newHash;
+  localStorage.setItem('bappu_admin_pwd_hash', newHash);
+  showToast('Admin password updated successfully!');
+  document.getElementById('admin-new-password').value = '';
+}
+
+function saveAdminSettings() {
+  const prompt = document.getElementById('admin-system-prompt').value.trim();
+  const model = document.getElementById('admin-model-select').value;
+  state.config.systemPrompt = prompt;
+  state.config.model = model;
+  localStorage.setItem('bappu_system_prompt', prompt);
+  localStorage.setItem('bappu_gemini_model', model);
+  showToast('Settings saved to database!');
+}
+
+function adminLogout() {
+  state.adminLoggedIn = false;
+  renderAdminPanel();
+  showToast('Logged out of Admin');
+}
+
+// --- User Settings Modal / Tab ---
+function saveUserSettings() {
+  const key = document.getElementById('setting-api-key').value.trim();
+  const name = document.getElementById('setting-student-name').value.trim();
+  const id = document.getElementById('setting-student-id').value.trim();
+  const inst = document.getElementById('setting-institution').value.trim();
+
+  state.config.apiKey = key;
+  state.config.studentName = name || state.config.studentName;
+  state.config.studentId = id || state.config.studentId;
+  state.config.institution = inst || state.config.institution;
+
+  localStorage.setItem('bappu_gemini_api_key', key);
+  localStorage.setItem('bappu_student_name', state.config.studentName);
+  localStorage.setItem('bappu_student_id', state.config.studentId);
+  localStorage.setItem('bappu_institution', state.config.institution);
+
+  showToast('Settings saved successfully!');
+  switchTab('chat');
+}
+
+// --- Toast Notification Helper ---
+function showToast(msg) {
+  let toast = document.getElementById('toast-notification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-medium border border-slate-700 transition-opacity duration-300';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2800);
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+  loadSessions();
+  renderSessionList();
+  renderMessages();
+
+  // Handle URL hash routing (e.g. #admin, #studio, #library)
+  const hash = window.location.hash.replace('#', '');
+  if (['admin', 'studio', 'library', 'settings'].includes(hash)) {
+    switchTab(hash);
+  }
+
+  // Auto-resize chat textarea
+  const input = document.getElementById('chat-input');
+  if (input) {
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitMessage();
+      }
+    });
+  }
+
+  // Populate settings fields
+  const keyInput = document.getElementById('setting-api-key');
+  if (keyInput) keyInput.value = state.config.apiKey;
+  const nameInput = document.getElementById('setting-student-name');
+  if (nameInput) nameInput.value = state.config.studentName;
+  const idInput = document.getElementById('setting-student-id');
+  if (idInput) idInput.value = state.config.studentId;
+  const instInput = document.getElementById('setting-institution');
+  if (instInput) instInput.value = state.config.institution;
+});
+
+</script>
+</body>
+</html>
